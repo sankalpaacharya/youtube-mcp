@@ -160,6 +160,26 @@ async function updateVideoFields(
   };
 }
 
+// ── Output formatting helpers ────────────────────────────────────────────
+
+const videoUrl = (id: string) => `https://youtube.com/watch?v=${id}`;
+
+function thumbOf(snippet: any): string | undefined {
+  const t = snippet?.thumbnails;
+  return (t?.maxres ?? t?.high ?? t?.medium ?? t?.default)?.url;
+}
+
+/** "PT1H2M3S" → "1:02:03" */
+function fmtDuration(iso?: string): string | undefined {
+  const m = iso?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return iso;
+  const [, h, min, s] = m;
+  const mm = h ? String(min ?? 0).padStart(2, "0") : String(min ?? 0);
+  return `${h ? `${h}:` : ""}${mm}:${String(s ?? 0).padStart(2, "0")}`;
+}
+
+const num = (v: unknown) => (v === undefined ? undefined : Number(v));
+
 // ── MCP tools ────────────────────────────────────────────────────────────
 
 type Tool = {
@@ -167,6 +187,21 @@ type Tool = {
   inputSchema: Record<string, unknown>;
   handler: (env: Env, args: any) => Promise<unknown>;
 };
+
+/** MCP tool annotations — clients can skip approval prompts for read-only tools. */
+const READ_ONLY = new Set([
+  "my_channel",
+  "list_my_videos",
+  "get_video",
+  "search_videos",
+  "list_playlists",
+  "list_playlist_items",
+  "video_stats",
+  "top_videos",
+  "get_thumbnail",
+  "channel_analytics",
+]);
+const DESTRUCTIVE = new Set(["delete_playlist", "remove_from_playlist"]);
 
 const str = { type: "string" };
 const obj = (
@@ -182,10 +217,13 @@ const TOOLS: Record<string, Tool> = {
     handler: async (env) => {
       const ch = await myChannel(env);
       return {
-        id: ch.id,
-        title: ch.snippet.title,
-        customUrl: ch.snippet.customUrl,
-        statistics: ch.statistics,
+        channel: ch.snippet.title,
+        url: `https://youtube.com/${ch.snippet.customUrl ?? `channel/${ch.id}`}`,
+        subscribers: num(ch.statistics.subscriberCount),
+        totalViews: num(ch.statistics.viewCount),
+        videoCount: num(ch.statistics.videoCount),
+        thumbnail: thumbOf(ch.snippet),
+        channelId: ch.id,
         uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
       };
     },
@@ -209,10 +247,12 @@ const TOOLS: Record<string, Tool> = {
       });
       return {
         videos: (res.items ?? []).map((it: any) => ({
-          videoId: it.snippet.resourceId.videoId,
           title: it.snippet.title,
           publishedAt: it.snippet.publishedAt,
           privacy: it.status?.privacyStatus,
+          url: videoUrl(it.snippet.resourceId.videoId),
+          thumbnail: thumbOf(it.snippet),
+          videoId: it.snippet.resourceId.videoId,
         })),
         nextPageToken: res.nextPageToken,
         totalResults: res.pageInfo?.totalResults,
@@ -229,7 +269,21 @@ const TOOLS: Record<string, Tool> = {
       });
       const v = res.items?.[0];
       if (!v) throw new Error(`Video ${videoId} not found.`);
-      return v;
+      return {
+        title: v.snippet.title,
+        description: v.snippet.description,
+        tags: v.snippet.tags,
+        publishedAt: v.snippet.publishedAt,
+        duration: fmtDuration(v.contentDetails?.duration),
+        privacy: v.status?.privacyStatus,
+        views: num(v.statistics?.viewCount),
+        likes: num(v.statistics?.likeCount),
+        comments: num(v.statistics?.commentCount),
+        url: videoUrl(v.id),
+        thumbnail: thumbOf(v.snippet),
+        videoId: v.id,
+        categoryId: v.snippet.categoryId,
+      };
     },
   },
   update_video: {
@@ -331,10 +385,12 @@ const TOOLS: Record<string, Tool> = {
         },
       });
       return (res.items ?? []).map((it: any) => ({
-        videoId: it.id.videoId,
         title: it.snippet.title,
-        channelTitle: it.snippet.channelTitle,
+        channel: it.snippet.channelTitle,
         publishedAt: it.snippet.publishedAt,
+        url: videoUrl(it.id.videoId),
+        thumbnail: thumbOf(it.snippet),
+        videoId: it.id.videoId,
       }));
     },
   },
@@ -513,12 +569,115 @@ const TOOLS: Record<string, Tool> = {
         query: { part: "snippet,statistics", id: videoIds.join(",") },
       });
       return (res.items ?? []).map((v: any) => ({
-        videoId: v.id,
         title: v.snippet.title,
-        views: v.statistics.viewCount,
-        likes: v.statistics.likeCount,
-        comments: v.statistics.commentCount,
+        views: num(v.statistics.viewCount),
+        likes: num(v.statistics.likeCount),
+        comments: num(v.statistics.commentCount),
+        url: videoUrl(v.id),
+        thumbnail: thumbOf(v.snippet),
+        videoId: v.id,
       }));
+    },
+  },
+  top_videos: {
+    description:
+      "Rank the channel's videos by performance — answers questions like 'what is my highest performing video?'. Scans up to 200 most recent uploads and sorts by the chosen metric: views (default), likes, comments, or engagement (likes+comments per view).",
+    inputSchema: obj({
+      metric: {
+        type: "string",
+        enum: ["views", "likes", "comments", "engagement"],
+        default: "views",
+      },
+      limit: { type: "integer", minimum: 1, maximum: 50, default: 5 },
+    }),
+    handler: async (env, { metric = "views", limit = 5 }) => {
+      const ch = await myChannel(env);
+      const ids: string[] = [];
+      let pageToken: string | undefined;
+      for (let page = 0; page < 4; page++) {
+        const res = await yt(env, "GET", "playlistItems", {
+          query: {
+            part: "snippet",
+            playlistId: ch.contentDetails.relatedPlaylists.uploads,
+            maxResults: "50",
+            pageToken,
+          },
+        });
+        for (const it of res.items ?? [])
+          ids.push(it.snippet.resourceId.videoId);
+        pageToken = res.nextPageToken;
+        if (!pageToken) break;
+      }
+      const videos: any[] = [];
+      for (let i = 0; i < ids.length; i += 50) {
+        const res = await yt(env, "GET", "videos", {
+          query: {
+            part: "snippet,statistics",
+            id: ids.slice(i, i + 50).join(","),
+            maxResults: "50",
+          },
+        });
+        videos.push(...(res.items ?? []));
+      }
+      const score = (v: any): number => {
+        const s = v.statistics ?? {};
+        const views = Number(s.viewCount ?? 0);
+        const likes = Number(s.likeCount ?? 0);
+        const comments = Number(s.commentCount ?? 0);
+        if (metric === "likes") return likes;
+        if (metric === "comments") return comments;
+        if (metric === "engagement")
+          return views ? (likes + comments) / views : 0;
+        return views;
+      };
+      const ranked = videos
+        .sort((a, b) => score(b) - score(a))
+        .slice(0, limit)
+        .map((v, i) => ({
+          rank: i + 1,
+          title: v.snippet.title,
+          views: num(v.statistics?.viewCount),
+          likes: num(v.statistics?.likeCount),
+          comments: num(v.statistics?.commentCount),
+          ...(metric === "engagement"
+            ? { engagement: `${(score(v) * 100).toFixed(2)}%` }
+            : {}),
+          publishedAt: v.snippet.publishedAt,
+          url: videoUrl(v.id),
+          thumbnail: thumbOf(v.snippet),
+          videoId: v.id,
+        }));
+      return { metric, scanned: videos.length, top: ranked };
+    },
+  },
+  get_thumbnail: {
+    description:
+      "Fetch a video's thumbnail and return it as an image so it can be shown directly in the conversation.",
+    inputSchema: obj({ videoId: str }, ["videoId"]),
+    handler: async (env, { videoId }) => {
+      const res = await yt(env, "GET", "videos", {
+        query: { part: "snippet", id: videoId },
+      });
+      const v = res.items?.[0];
+      if (!v) throw new Error(`Video ${videoId} not found.`);
+      const url = thumbOf(v.snippet);
+      if (!url) throw new Error("No thumbnail available.");
+      const img = await fetch(url);
+      if (!img.ok) throw new Error(`Could not fetch thumbnail (${img.status})`);
+      const bytes = new Uint8Array(await img.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 8192)
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      return {
+        __content: [
+          { type: "text", text: `Thumbnail of "${v.snippet.title}" (${url})` },
+          {
+            type: "image",
+            data: btoa(binary),
+            mimeType: img.headers.get("content-type") ?? "image/jpeg",
+          },
+        ],
+      };
     },
   },
   channel_analytics: {
@@ -585,15 +744,22 @@ async function handleRpc(env: Env, msg: any): Promise<any | null> {
           name,
           description: t.description,
           inputSchema: t.inputSchema,
+          annotations: {
+            readOnlyHint: READ_ONLY.has(name),
+            destructiveHint: DESTRUCTIVE.has(name),
+          },
         })),
       });
     case "tools/call": {
       const t = TOOLS[params?.name as string];
       if (!t) return err(-32602, `Unknown tool: ${params?.name}`);
       try {
-        const result = await t.handler(env, params?.arguments ?? {});
+        const result: any = await t.handler(env, params?.arguments ?? {});
+        // Handlers may return pre-built content blocks (e.g. images).
         return reply({
-          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          content: result?.__content ?? [
+            { type: "text", text: JSON.stringify(result, null, 2) },
+          ],
         });
       } catch (e) {
         return reply({

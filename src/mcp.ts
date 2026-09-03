@@ -29,6 +29,24 @@ function tool<A>(fn: (args: A) => Promise<unknown>) {
   };
 }
 
+const videoUrl = (id: string) => `https://youtube.com/watch?v=${id}`;
+
+function thumbOf(snippet: any): string | undefined {
+  const t = snippet?.thumbnails;
+  return (t?.maxres ?? t?.high ?? t?.medium ?? t?.default)?.url;
+}
+
+/** "PT1H2M3S" → "1:02:03" */
+function fmtDuration(iso?: string): string | undefined {
+  const m = iso?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return iso;
+  const [, h, min, s] = m;
+  const mm = h ? String(min ?? 0).padStart(2, "0") : String(min ?? 0);
+  return `${h ? `${h}:` : ""}${mm}:${String(s ?? 0).padStart(2, "0")}`;
+}
+
+const num = (v: unknown) => (v === undefined ? undefined : Number(v));
+
 async function myChannel() {
   const res = await yt("GET", "channels", {
     query: { part: "snippet,statistics,contentDetails", mine: "true" },
@@ -93,10 +111,13 @@ server.registerTool(
   tool(async () => {
     const ch = await myChannel();
     return {
-      id: ch.id,
-      title: ch.snippet.title,
-      customUrl: ch.snippet.customUrl,
-      statistics: ch.statistics,
+      channel: ch.snippet.title,
+      url: `https://youtube.com/${ch.snippet.customUrl ?? `channel/${ch.id}`}`,
+      subscribers: num(ch.statistics.subscriberCount),
+      totalViews: num(ch.statistics.viewCount),
+      videoCount: num(ch.statistics.videoCount),
+      thumbnail: thumbOf(ch.snippet),
+      channelId: ch.id,
       uploadsPlaylistId: ch.contentDetails.relatedPlaylists.uploads,
     };
   }),
@@ -127,10 +148,12 @@ server.registerTool(
     });
     return {
       videos: (res.items ?? []).map((it: any) => ({
-        videoId: it.snippet.resourceId.videoId,
         title: it.snippet.title,
         publishedAt: it.snippet.publishedAt,
         privacy: it.status?.privacyStatus,
+        url: videoUrl(it.snippet.resourceId.videoId),
+        thumbnail: thumbOf(it.snippet),
+        videoId: it.snippet.resourceId.videoId,
       })),
       nextPageToken: res.nextPageToken,
       totalResults: res.pageInfo?.totalResults,
@@ -152,7 +175,21 @@ server.registerTool(
     });
     const v = res.items?.[0];
     if (!v) throw new Error(`Video ${videoId} not found.`);
-    return v;
+    return {
+      title: v.snippet.title,
+      description: v.snippet.description,
+      tags: v.snippet.tags,
+      publishedAt: v.snippet.publishedAt,
+      duration: fmtDuration(v.contentDetails?.duration),
+      privacy: v.status?.privacyStatus,
+      views: num(v.statistics?.viewCount),
+      likes: num(v.statistics?.likeCount),
+      comments: num(v.statistics?.commentCount),
+      url: videoUrl(v.id),
+      thumbnail: thumbOf(v.snippet),
+      videoId: v.id,
+      categoryId: v.snippet.categoryId,
+    };
   }),
 );
 
@@ -274,10 +311,12 @@ server.registerTool(
       },
     });
     return (res.items ?? []).map((it: any) => ({
-      videoId: it.id.videoId,
       title: it.snippet.title,
-      channelTitle: it.snippet.channelTitle,
+      channel: it.snippet.channelTitle,
       publishedAt: it.snippet.publishedAt,
+      url: videoUrl(it.id.videoId),
+      thumbnail: thumbOf(it.snippet),
+      videoId: it.id.videoId,
     }));
   }),
 );
@@ -484,13 +523,124 @@ server.registerTool(
       query: { part: "snippet,statistics", id: videoIds.join(",") },
     });
     return (res.items ?? []).map((v: any) => ({
-      videoId: v.id,
       title: v.snippet.title,
-      views: v.statistics.viewCount,
-      likes: v.statistics.likeCount,
-      comments: v.statistics.commentCount,
+      views: num(v.statistics.viewCount),
+      likes: num(v.statistics.likeCount),
+      comments: num(v.statistics.commentCount),
+      url: videoUrl(v.id),
+      thumbnail: thumbOf(v.snippet),
+      videoId: v.id,
     }));
   }),
+);
+
+server.registerTool(
+  "top_videos",
+  {
+    title: "Top performing videos",
+    description:
+      "Rank the channel's videos by performance — answers 'what is my highest performing video?'. Scans up to 200 recent uploads and sorts by views (default), likes, comments, or engagement.",
+    inputSchema: {
+      metric: z.enum(["views", "likes", "comments", "engagement"]).default("views"),
+      limit: z.number().int().min(1).max(50).default(5),
+    },
+  },
+  tool(async ({ metric, limit }) => {
+    const ch = await myChannel();
+    const ids: string[] = [];
+    let pageToken: string | undefined;
+    for (let page = 0; page < 4; page++) {
+      const res = await yt("GET", "playlistItems", {
+        query: {
+          part: "snippet",
+          playlistId: ch.contentDetails.relatedPlaylists.uploads,
+          maxResults: "50",
+          pageToken,
+        },
+      });
+      for (const it of res.items ?? []) ids.push(it.snippet.resourceId.videoId);
+      pageToken = res.nextPageToken;
+      if (!pageToken) break;
+    }
+    const videos: any[] = [];
+    for (let i = 0; i < ids.length; i += 50) {
+      const res = await yt("GET", "videos", {
+        query: {
+          part: "snippet,statistics",
+          id: ids.slice(i, i + 50).join(","),
+          maxResults: "50",
+        },
+      });
+      videos.push(...(res.items ?? []));
+    }
+    const score = (v: any): number => {
+      const s = v.statistics ?? {};
+      const views = Number(s.viewCount ?? 0);
+      const likes = Number(s.likeCount ?? 0);
+      const comments = Number(s.commentCount ?? 0);
+      if (metric === "likes") return likes;
+      if (metric === "comments") return comments;
+      if (metric === "engagement") return views ? (likes + comments) / views : 0;
+      return views;
+    };
+    const ranked = videos
+      .sort((a, b) => score(b) - score(a))
+      .slice(0, limit)
+      .map((v, i) => ({
+        rank: i + 1,
+        title: v.snippet.title,
+        views: num(v.statistics?.viewCount),
+        likes: num(v.statistics?.likeCount),
+        comments: num(v.statistics?.commentCount),
+        ...(metric === "engagement"
+          ? { engagement: `${(score(v) * 100).toFixed(2)}%` }
+          : {}),
+        publishedAt: v.snippet.publishedAt,
+        url: videoUrl(v.id),
+        thumbnail: thumbOf(v.snippet),
+        videoId: v.id,
+      }));
+    return { metric, scanned: videos.length, top: ranked };
+  }),
+);
+
+server.registerTool(
+  "get_thumbnail",
+  {
+    title: "Show video thumbnail",
+    description:
+      "Fetch a video's thumbnail and return it as an image so it can be shown directly in the conversation.",
+    inputSchema: { videoId: z.string() },
+  },
+  async ({ videoId }) => {
+    try {
+      const res = await yt("GET", "videos", {
+        query: { part: "snippet", id: videoId },
+      });
+      const v = res.items?.[0];
+      if (!v) throw new Error(`Video ${videoId} not found.`);
+      const url = thumbOf(v.snippet);
+      if (!url) throw new Error("No thumbnail available.");
+      const img = await fetch(url);
+      if (!img.ok) throw new Error(`Could not fetch thumbnail (${img.status})`);
+      const data = Buffer.from(await img.arrayBuffer()).toString("base64");
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Thumbnail of "${v.snippet.title}" (${url})`,
+          },
+          {
+            type: "image" as const,
+            data,
+            mimeType: img.headers.get("content-type") ?? "image/jpeg",
+          },
+        ],
+      };
+    } catch (err) {
+      return fail(err);
+    }
+  },
 );
 
 server.registerTool(
