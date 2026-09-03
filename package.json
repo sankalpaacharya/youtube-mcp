@@ -1,0 +1,22 @@
+{
+  "name": "youtube-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for organizing your YouTube channel — videos, playlists, and analytics",
+  "type": "module",
+  "scripts": {
+    "mcp": "bun run src/mcp.ts",
+    "auth": "bun run src/auth-server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "elysia": "^1.4.30",
+    "@elysiajs/swagger": "^1.3.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
