@@ -1,0 +1,9 @@
+# Worker secrets. The Deploy to Cloudflare flow prompts for these;
+# for manual deploys use `wrangler secret put <NAME>` instead.
+
+# Client secret of your Google OAuth client (README, step 1)
+GOOGLE_CLIENT_SECRET=
+
+# Random secret that protects your MCP endpoint URL.
+# Generate one with: openssl rand -hex 24
+MCP_PATH_TOKEN=

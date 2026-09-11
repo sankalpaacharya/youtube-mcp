@@ -32,6 +32,22 @@ Runs two ways, same 20 tools:
 
 Outputs lead with titles, watch URLs, thumbnails and numbers; resource IDs come last so the client can chain actions (find a video, rename it, add it to a playlist). Read-only tools carry MCP `readOnlyHint` annotations so clients can relax permission prompts.
 
+## Deploy your own
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sankalpaacharya/youtube-mcp)
+
+The button clones this repo into your GitHub, creates the KV namespace in your Cloudflare account, and deploys the Worker. Full walkthrough:
+
+1. **Google credentials** (5 min, free): follow [step 1 below](#1-google-cloud-credentials-once) to get a client id and secret. You will add the redirect URI after deploying, so skip that part for now.
+2. **Click the deploy button.** During setup, set the `GOOGLE_CLIENT_ID` variable to your client id, and the two secrets: `GOOGLE_CLIENT_SECRET` (from Google) and `MCP_PATH_TOKEN` (any long random string, e.g. `openssl rand -hex 24`). Keep `MCP_PATH_TOKEN` somewhere safe, it is the key to your server.
+3. **Add the redirect URI.** Your Worker now has a URL like `https://youtube-mcp.<your-subdomain>.workers.dev`. In your Google OAuth client, add `<worker-url>/auth/callback` as an authorized redirect URI.
+4. **Connect YouTube** (one time): open `<worker-url>/auth/login?key=<MCP_PATH_TOKEN>` and approve. The Worker root page (`<worker-url>/`) shows whether you are connected.
+5. **Add to Claude:** in claude.ai go to Settings, Connectors, Add custom connector, choose Authentication: None, and paste `<worker-url>/mcp/<MCP_PATH_TOKEN>`.
+
+Now ask Claude things like "what is my top video this month" or "make a playlist of all my calculus videos".
+
+Prefer the CLI? See [Deploy with wrangler](#2b-deploy-with-wrangler). Want it local-only instead? See [Run locally](#2a-run-locally-claude-code--claude-desktop).
+
 ## Setup
 
 ### 1. Google Cloud credentials (once)
@@ -59,11 +75,12 @@ Tokens are saved to `.tokens.json` and refresh automatically, so the login is on
 claude mcp add youtube -- bun run /absolute/path/to/youtube-mcp/src/mcp.ts
 ```
 
-### 2b. Deploy to Cloudflare Workers
+### 2b. Deploy with wrangler
 
 ```sh
-cp wrangler.jsonc.example wrangler.jsonc   # fill in your values
+bun install
 bunx wrangler kv namespace create TOKENS   # paste the id into wrangler.jsonc
+# set GOOGLE_CLIENT_ID in wrangler.jsonc vars, then:
 bunx wrangler secret put GOOGLE_CLIENT_SECRET
 openssl rand -hex 24                       # generate a URL secret, then:
 bunx wrangler secret put MCP_PATH_TOKEN    # paste that secret
@@ -84,7 +101,7 @@ https://youtube-mcp.<your-subdomain>.workers.dev/mcp/<MCP_PATH_TOKEN>
 
 ## Security model
 
-The Worker endpoint is protected by the unguessable `MCP_PATH_TOKEN` in the URL path, the same pattern as webhook URLs. Anyone with the full URL can control your channel, so treat both URLs as secrets. The OAuth login route is gated by the same token (plus a `state` check) so nobody can overwrite your stored account. Tokens live in Cloudflare KV. Nothing sensitive is in the repo: `.env`, `.tokens.json` and `wrangler.jsonc` are all gitignored.
+The Worker endpoint is protected by the unguessable `MCP_PATH_TOKEN` in the URL path, the same pattern as webhook URLs. Anyone with the full URL can control your channel, so treat both URLs as secrets. The OAuth login route is gated by the same token (plus a `state` check) so nobody can overwrite your stored account. Tokens live in Cloudflare KV. Nothing sensitive is committed: `.env`, `.tokens.json` and `.dev.vars` are gitignored, and the secrets only exist in Wrangler's secret store. If you fork this repo, avoid committing your own KV namespace id or client id in `wrangler.jsonc` unless you are fine with them being public (they are identifiers, not credentials).
 
 ## Notes
 
