@@ -1,57 +1,112 @@
 # youtube-mcp
 
-MCP server for organizing your YouTube channel from Claude — rename videos, build playlists, move videos around, and pull basic analytics. Built with Bun; the one-time OAuth login runs on [Elysia](https://elysiajs.com/).
+**Manage your YouTube channel by talking to AI.** An [MCP](https://modelcontextprotocol.io) server that gives Claude (or any MCP client) 20 tools to organize your videos and playlists, update titles/descriptions/thumbnails, and answer questions about your channel's performance — with real data, not guesses.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Runtime: Bun](https://img.shields.io/badge/Runtime-Bun-black)](https://bun.sh)
+[![Deploy: Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare_Workers-orange)](https://workers.cloudflare.com)
+
+Ask things like:
+
+> *"What's my highest performing video?"*
+> *"Make a 'Trigonometry' playlist and move all my trig videos into it"*
+> *"Rename my latest upload and give it a better description"*
+> *"Show me the thumbnail of my most-viewed video — now replace it with this image"*
+
+Runs two ways, same tools:
+
+- **Locally** (Bun + stdio) — for Claude Code / Claude Desktop on your machine
+- **On Cloudflare Workers** (Streamable HTTP) — as a [custom connector](https://support.claude.com/en/articles/11175166) for claude.ai on web and mobile, usable from anywhere
 
 ## Tools
 
-| Tool | What it does |
+| Category | Tools |
 |---|---|
-| `my_channel` | Channel info, subscriber/view counts, uploads playlist id |
-| `list_my_videos` | Your uploads (paginated) |
-| `get_video` | Full details for one video |
-| `update_video` | Change title, description, tags, privacy in one call |
-| `update_title` / `update_description` / `update_tags` | Change a single field |
-| `update_thumbnail` | Set a custom thumbnail from a local file or URL (JPEG/PNG ≤2MB) |
-| `search_videos` | Search YouTube, or just your own uploads |
-| `list_playlists` / `create_playlist` / `update_playlist` / `delete_playlist` | Playlist management |
-| `list_playlist_items` / `add_to_playlist` / `remove_from_playlist` | Organize videos into playlists |
-| `video_stats` | Views/likes/comments for up to 50 videos |
-| `channel_analytics` | Views, watch time, subs gained/lost over a date range (daily breakdown or per-video) |
+| **Channel** | `my_channel` |
+| **Videos** | `list_my_videos` · `get_video` · `search_videos` |
+| **Editing** | `update_video` · `update_title` · `update_description` · `update_tags` · `update_thumbnail` |
+| **Playlists** | `list_playlists` · `create_playlist` · `update_playlist` · `delete_playlist` · `list_playlist_items` · `add_to_playlist` · `remove_from_playlist` |
+| **Insights** | `top_videos` (rank by views/likes/comments/engagement) · `video_stats` · `channel_analytics` (watch time, subs over any date range) · `get_thumbnail` (shows the image in chat) |
+
+Outputs are designed for conversations: titles, watch URLs, thumbnails, and real numbers first; resource IDs last (so the AI can chain actions like *find → rename → add to playlist*). Read-only tools carry MCP `readOnlyHint` annotations so clients can relax permission prompts.
 
 ## Setup
 
-### 1. Google Cloud credentials
+### 1. Google Cloud credentials (once, ~5 minutes)
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create (or pick) a project.
-2. Enable **YouTube Data API v3** and **YouTube Analytics API** (APIs & Services → Library).
-3. Configure the OAuth consent screen (External, add yourself as a test user).
-4. Create credentials → **OAuth client ID** → type **Web application**, and add
-   `http://localhost:3456/auth/callback` as an authorized redirect URI.
-5. Copy the client id/secret:
+1. Create a project at [console.cloud.google.com](https://console.cloud.google.com/)
+2. Enable **YouTube Data API v3** and **YouTube Analytics API** (APIs & Services → Library)
+3. Configure the OAuth consent screen: External, add your own Google account as a **test user**
+4. Create an **OAuth client ID** (type: *Web application*) and add redirect URIs for the modes you'll use:
+   - Local: `http://localhost:3456/auth/callback`
+   - Workers: `https://youtube-mcp.<your-subdomain>.workers.dev/auth/callback`
 
-```sh
-cp .env.example .env   # then fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-```
+> The app can stay in "Testing" mode forever for personal use — only your test-user account can log in, and no Google verification is needed.
 
-### 2. Connect your YouTube account (one time)
+### 2a. Run locally (Claude Code / Claude Desktop)
 
 ```sh
 bun install
-bun run auth
+cp .env.example .env        # fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+bun run auth                # then open http://localhost:3456/auth/login and approve
 ```
 
-Open <http://localhost:3456/auth/login>, approve access, then stop the server (Ctrl+C). Tokens are saved to `.tokens.json` and refresh automatically.
-
-### 3. Register with Claude Code
+Tokens are saved to `.tokens.json` and refresh automatically — the login is one-time. Then register the server:
 
 ```sh
-claude mcp add youtube -- bun run /home/sanku/work/youtube-mcp/src/mcp.ts
+claude mcp add youtube -- bun run /absolute/path/to/youtube-mcp/src/mcp.ts
 ```
 
-Then just ask things like *"rename my latest video to X"*, *"make a 'Tutorials' playlist and put all my videos about bun in it"*, or *"how did the channel do last month, day by day?"*.
+### 2b. Deploy to Cloudflare Workers (use from claude.ai anywhere)
 
-## Notes
+```sh
+cp wrangler.jsonc.example wrangler.jsonc   # fill in your values
+bunx wrangler kv namespace create TOKENS   # paste the id into wrangler.jsonc
+bunx wrangler secret put GOOGLE_CLIENT_SECRET
+openssl rand -hex 24                       # generate a URL secret, then:
+bunx wrangler secret put MCP_PATH_TOKEN    # paste that secret
+bun run deploy
+```
 
-- Playlist/video **writes need OAuth**; `YOUTUBE_API_KEY` alone only covers public reads.
-- The Data API has a 10,000 units/day quota. Most calls cost 1 unit, but `search_videos` costs 100 and writes cost ~50 — playlist organizing fits comfortably, just avoid search-heavy loops.
-- Video titles max 100 chars, descriptions 5000; the API rejects `<` and `>` in both.
+Connect your YouTube account once by opening:
+
+```
+https://youtube-mcp.<your-subdomain>.workers.dev/auth/login?key=<MCP_PATH_TOKEN>
+```
+
+Then add it in **claude.ai → Settings → Connectors → Add custom connector** with Authentication: *None*:
+
+```
+https://youtube-mcp.<your-subdomain>.workers.dev/mcp/<MCP_PATH_TOKEN>
+```
+
+## Security model
+
+The Worker endpoint is protected by the unguessable `MCP_PATH_TOKEN` in the URL path — the same pattern as webhook URLs. Anyone with the full URL can control your channel, so **treat both URLs as secrets**. The OAuth login route is gated by the same token (and a `state` check) so nobody can overwrite your stored account. Tokens live in Cloudflare KV; nothing sensitive is in the repo — `.env`, `.tokens.json`, and `wrangler.jsonc` are all gitignored.
+
+## Good to know
+
+- **Quota**: the YouTube Data API gives 10,000 free units/day. Reads cost 1, edits ~50, `search_videos` costs 100. Organizing playlists all day fits comfortably.
+- **Thumbnails**: JPEG/PNG up to 2MB; your channel must be phone-verified for custom thumbnails.
+- **Titles/descriptions**: max 100 / 5000 chars; YouTube rejects `<` and `>`.
+- Everything is free — no Google billing account required, and the Worker fits in Cloudflare's free tier.
+
+## Architecture
+
+```
+src/
+├── mcp.ts          # local MCP server (stdio, Bun) — 20 tools via @modelcontextprotocol/sdk
+├── worker.ts       # Cloudflare Worker — same 20 tools over MCP Streamable HTTP, tokens in KV
+├── auth-server.ts  # local one-time OAuth flow (Elysia)
+├── auth.ts         # local token store + refresh
+├── youtube.ts      # YouTube Data API v3 + Analytics API v2 client
+└── env.ts          # env loading for any working directory
+```
+
+## Contributing
+
+Issues and PRs welcome. Run `bun run typecheck` before submitting.
+
+## License
+
+[MIT](LICENSE)

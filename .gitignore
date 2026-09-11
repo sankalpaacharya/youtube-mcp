@@ -1,3 +1,5 @@
 node_modules
 .env
 .tokens.json
+# Contains your Cloudflare account/KV ids — copy from wrangler.jsonc.example
+wrangler.jsonc

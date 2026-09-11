@@ -1,0 +1,15 @@
+// Copy this file to wrangler.jsonc and fill in your own values.
+{
+  "name": "youtube-mcp",
+  "main": "src/worker.ts",
+  // Optional but recommended: pins deploys to one Cloudflare account.
+  // Find it with `wrangler whoami`.
+  // "account_id": "<your-cloudflare-account-id>",
+  "compatibility_date": "2026-09-01",
+  // Create with: wrangler kv namespace create TOKENS
+  "kv_namespaces": [{ "binding": "TOKENS", "id": "<your-kv-namespace-id>" }],
+  "vars": {
+    "GOOGLE_CLIENT_ID": "<your-client-id>.apps.googleusercontent.com"
+  }
+  // Secrets (set via `wrangler secret put`): GOOGLE_CLIENT_SECRET, MCP_PATH_TOKEN
+}
