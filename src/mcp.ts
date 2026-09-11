@@ -277,7 +277,7 @@ server.registerTool(
       throw new Error(`Thumbnail must be JPEG or PNG, got ${contentType}`);
     if (bytes.byteLength > 2 * 1024 * 1024)
       throw new Error(
-        `Image is ${(bytes.byteLength / 1024 / 1024).toFixed(1)}MB — YouTube's limit is 2MB.`,
+        `Image is ${(bytes.byteLength / 1024 / 1024).toFixed(1)}MB - YouTube's limit is 2MB.`,
       );
     const res = await ytSetThumbnail(videoId, bytes, contentType);
     return {
@@ -539,7 +539,7 @@ server.registerTool(
   {
     title: "Top performing videos",
     description:
-      "Rank the channel's videos by performance — answers 'what is my highest performing video?'. Scans up to 200 recent uploads and sorts by views (default), likes, comments, or engagement.",
+      "Rank the channel's videos by performance - answers 'what is my highest performing video?'. Scans up to 200 recent uploads and sorts by views (default), likes, comments, or engagement.",
     inputSchema: {
       metric: z.enum(["views", "likes", "comments", "engagement"]).default("views"),
       limit: z.number().int().min(1).max(50).default(5),

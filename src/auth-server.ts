@@ -24,7 +24,7 @@ const app = new Elysia()
       return "Missing ?code param";
     }
     await exchangeCode(query.code);
-    return "✅ YouTube account connected! Tokens saved to .tokens.json — you can close this tab and stop this server (Ctrl+C).";
+    return "✅ YouTube account connected! Tokens saved to .tokens.json - you can close this tab and stop this server (Ctrl+C).";
   })
   .listen(PORT);
 

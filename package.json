@@ -1,7 +1,7 @@
 {
   "name": "youtube-mcp",
   "version": "1.0.0",
-  "description": "MCP server for managing your YouTube channel with AI — organize playlists, update titles and thumbnails, and pull analytics. Runs locally with Bun or remotely on Cloudflare Workers.",
+  "description": "MCP server for managing YouTube videos, playlists, thumbnails and analytics. Runs on Bun or Cloudflare Workers.",
   "license": "MIT",
   "author": "Sankalpa Acharya",
   "repository": {

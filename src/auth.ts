@@ -69,7 +69,7 @@ export async function exchangeCode(code: string): Promise<void> {
 
 async function refresh(tokens: TokenSet): Promise<TokenSet> {
   if (!tokens.refresh_token)
-    throw new Error("No refresh token — re-authenticate via `bun run auth`");
+    throw new Error("No refresh token - re-authenticate via `bun run auth`");
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

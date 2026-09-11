@@ -2,10 +2,10 @@
  * Cloudflare Worker: YouTube MCP server over Streamable HTTP.
  *
  * Routes:
- *   GET  /                      — status
- *   GET  /auth/login?key=TOKEN  — start Google OAuth (key = MCP_PATH_TOKEN)
- *   GET  /auth/callback         — OAuth redirect target; stores tokens in KV
- *   POST /mcp/TOKEN             — MCP Streamable HTTP endpoint (stateless)
+ *   GET  /                      - status
+ *   GET  /auth/login?key=TOKEN  - start Google OAuth (key = MCP_PATH_TOKEN)
+ *   GET  /auth/callback         - OAuth redirect target; stores tokens in KV
+ *   POST /mcp/TOKEN             - MCP Streamable HTTP endpoint (stateless)
  */
 
 interface KVStore {
@@ -38,12 +38,12 @@ async function getAccessToken(env: Env): Promise<string> {
   const raw = await env.TOKENS.get(TOKEN_KEY);
   if (!raw)
     throw new Error(
-      "Not authenticated — open /auth/login?key=<MCP_PATH_TOKEN> in a browser first.",
+      "Not authenticated - open /auth/login?key=<MCP_PATH_TOKEN> in a browser first.",
     );
   let tokens = JSON.parse(raw) as TokenSet;
   if (Date.now() > tokens.expires_at - 60_000) {
     if (!tokens.refresh_token)
-      throw new Error("No refresh token — re-authenticate via /auth/login.");
+      throw new Error("No refresh token - re-authenticate via /auth/login.");
     const res = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -188,7 +188,7 @@ type Tool = {
   handler: (env: Env, args: any) => Promise<unknown>;
 };
 
-/** MCP tool annotations — clients can skip approval prompts for read-only tools. */
+/** MCP tool annotations - clients can skip approval prompts for read-only tools. */
 const READ_ONLY = new Set([
   "my_channel",
   "list_my_videos",
@@ -581,7 +581,7 @@ const TOOLS: Record<string, Tool> = {
   },
   top_videos: {
     description:
-      "Rank the channel's videos by performance — answers questions like 'what is my highest performing video?'. Scans up to 200 most recent uploads and sorts by the chosen metric: views (default), likes, comments, or engagement (likes+comments per view).",
+      "Rank the channel's videos by performance - answers questions like 'what is my highest performing video?'. Scans up to 200 most recent uploads and sorts by the chosen metric: views (default), likes, comments, or engagement (likes+comments per view).",
     inputSchema: obj({
       metric: {
         type: "string",
@@ -718,7 +718,7 @@ const SUPPORTED_PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 async function handleRpc(env: Env, msg: any): Promise<any | null> {
   const { id, method, params } = msg ?? {};
-  if (id === undefined || id === null) return null; // notification — no response
+  if (id === undefined || id === null) return null; // notification - no response
 
   const reply = (result: unknown) => ({ jsonrpc: "2.0", id, result });
   const err = (code: number, message: string) => ({

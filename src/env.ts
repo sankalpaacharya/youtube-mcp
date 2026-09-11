@@ -5,7 +5,7 @@ import { join } from "node:path";
 export const ROOT = join(import.meta.dir, "..");
 
 // The MCP server may be launched from any cwd (e.g. by Claude Code), so Bun's
-// automatic .env loading can miss the project's .env — load it explicitly.
+// automatic .env loading can miss the project's .env - load it explicitly.
 const envFile = join(ROOT, ".env");
 if (existsSync(envFile)) {
   for (const line of readFileSync(envFile, "utf8").split("\n")) {
@@ -21,7 +21,7 @@ export function requireEnv(name: string): string {
   const val = process.env[name];
   if (!val)
     throw new Error(
-      `Missing ${name} — set it in ${envFile} (see .env.example)`,
+      `Missing ${name} - set it in ${envFile} (see .env.example)`,
     );
   return val;
 }

@@ -1,47 +1,49 @@
-# youtube-mcp
+<p align="center">
+  <img src="https://cdn.simpleicons.org/youtube/FF0000" width="72" alt="YouTube logo">
+</p>
 
-**Manage your YouTube channel by talking to AI.** An [MCP](https://modelcontextprotocol.io) server that gives Claude (or any MCP client) 20 tools to organize your videos and playlists, update titles/descriptions/thumbnails, and answer questions about your channel's performance — with real data, not guesses.
+<h1 align="center">youtube-mcp</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Runtime: Bun](https://img.shields.io/badge/Runtime-Bun-black)](https://bun.sh)
-[![Deploy: Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare_Workers-orange)](https://workers.cloudflare.com)
+<p align="center">Manage your YouTube channel from Claude</p>
 
-Ask things like:
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://bun.sh"><img src="https://img.shields.io/badge/runtime-Bun-black" alt="Runtime: Bun"></a>
+  <a href="https://workers.cloudflare.com"><img src="https://img.shields.io/badge/deploy-Cloudflare%20Workers-F38020" alt="Deploy: Cloudflare Workers"></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/protocol-MCP-8A2BE2" alt="Protocol: MCP"></a>
+</p>
 
-> *"What's my highest performing video?"*
-> *"Make a 'Trigonometry' playlist and move all my trig videos into it"*
-> *"Rename my latest upload and give it a better description"*
-> *"Show me the thumbnail of my most-viewed video — now replace it with this image"*
+youtube-mcp is an MCP server for the YouTube Data API. It lets Claude (or any MCP client) manage your channel: rename videos, edit descriptions, tags and thumbnails, organize playlists, and answer questions about performance with real data instead of guesses.
 
-Runs two ways, same tools:
+Runs two ways, same 20 tools:
 
-- **Locally** (Bun + stdio) — for Claude Code / Claude Desktop on your machine
-- **On Cloudflare Workers** (Streamable HTTP) — as a [custom connector](https://support.claude.com/en/articles/11175166) for claude.ai on web and mobile, usable from anywhere
+- **Local** (Bun, stdio) for Claude Code and Claude Desktop
+- **Cloudflare Workers** (Streamable HTTP) as a claude.ai custom connector, usable from web and mobile
 
 ## Tools
 
 | Category | Tools |
 |---|---|
-| **Channel** | `my_channel` |
-| **Videos** | `list_my_videos` · `get_video` · `search_videos` |
-| **Editing** | `update_video` · `update_title` · `update_description` · `update_tags` · `update_thumbnail` |
-| **Playlists** | `list_playlists` · `create_playlist` · `update_playlist` · `delete_playlist` · `list_playlist_items` · `add_to_playlist` · `remove_from_playlist` |
-| **Insights** | `top_videos` (rank by views/likes/comments/engagement) · `video_stats` · `channel_analytics` (watch time, subs over any date range) · `get_thumbnail` (shows the image in chat) |
+| Channel | `my_channel` |
+| Videos | `list_my_videos`, `get_video`, `search_videos` |
+| Editing | `update_video`, `update_title`, `update_description`, `update_tags`, `update_thumbnail` |
+| Playlists | `list_playlists`, `create_playlist`, `update_playlist`, `delete_playlist`, `list_playlist_items`, `add_to_playlist`, `remove_from_playlist` |
+| Insights | `top_videos`, `video_stats`, `channel_analytics`, `get_thumbnail` |
 
-Outputs are designed for conversations: titles, watch URLs, thumbnails, and real numbers first; resource IDs last (so the AI can chain actions like *find → rename → add to playlist*). Read-only tools carry MCP `readOnlyHint` annotations so clients can relax permission prompts.
+Outputs lead with titles, watch URLs, thumbnails and numbers; resource IDs come last so the client can chain actions (find a video, rename it, add it to a playlist). Read-only tools carry MCP `readOnlyHint` annotations so clients can relax permission prompts.
 
 ## Setup
 
-### 1. Google Cloud credentials (once, ~5 minutes)
+### 1. Google Cloud credentials (once)
 
 1. Create a project at [console.cloud.google.com](https://console.cloud.google.com/)
-2. Enable **YouTube Data API v3** and **YouTube Analytics API** (APIs & Services → Library)
-3. Configure the OAuth consent screen: External, add your own Google account as a **test user**
-4. Create an **OAuth client ID** (type: *Web application*) and add redirect URIs for the modes you'll use:
+2. Enable **YouTube Data API v3** and **YouTube Analytics API** (APIs & Services, Library)
+3. Configure the OAuth consent screen: External, and add your own Google account as a test user
+4. Create an **OAuth client ID** (type: Web application) and add redirect URIs for the modes you will use:
    - Local: `http://localhost:3456/auth/callback`
    - Workers: `https://youtube-mcp.<your-subdomain>.workers.dev/auth/callback`
 
-> The app can stay in "Testing" mode forever for personal use — only your test-user account can log in, and no Google verification is needed.
+The app can stay in "Testing" mode for personal use. Only your test-user account can log in, and no Google verification is needed.
 
 ### 2a. Run locally (Claude Code / Claude Desktop)
 
@@ -51,13 +53,13 @@ cp .env.example .env        # fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
 bun run auth                # then open http://localhost:3456/auth/login and approve
 ```
 
-Tokens are saved to `.tokens.json` and refresh automatically — the login is one-time. Then register the server:
+Tokens are saved to `.tokens.json` and refresh automatically, so the login is one-time. Then register the server:
 
 ```sh
 claude mcp add youtube -- bun run /absolute/path/to/youtube-mcp/src/mcp.ts
 ```
 
-### 2b. Deploy to Cloudflare Workers (use from claude.ai anywhere)
+### 2b. Deploy to Cloudflare Workers
 
 ```sh
 cp wrangler.jsonc.example wrangler.jsonc   # fill in your values
@@ -74,7 +76,7 @@ Connect your YouTube account once by opening:
 https://youtube-mcp.<your-subdomain>.workers.dev/auth/login?key=<MCP_PATH_TOKEN>
 ```
 
-Then add it in **claude.ai → Settings → Connectors → Add custom connector** with Authentication: *None*:
+Then add it in claude.ai under Settings, Connectors, Add custom connector (Authentication: None):
 
 ```
 https://youtube-mcp.<your-subdomain>.workers.dev/mcp/<MCP_PATH_TOKEN>
@@ -82,21 +84,21 @@ https://youtube-mcp.<your-subdomain>.workers.dev/mcp/<MCP_PATH_TOKEN>
 
 ## Security model
 
-The Worker endpoint is protected by the unguessable `MCP_PATH_TOKEN` in the URL path — the same pattern as webhook URLs. Anyone with the full URL can control your channel, so **treat both URLs as secrets**. The OAuth login route is gated by the same token (and a `state` check) so nobody can overwrite your stored account. Tokens live in Cloudflare KV; nothing sensitive is in the repo — `.env`, `.tokens.json`, and `wrangler.jsonc` are all gitignored.
+The Worker endpoint is protected by the unguessable `MCP_PATH_TOKEN` in the URL path, the same pattern as webhook URLs. Anyone with the full URL can control your channel, so treat both URLs as secrets. The OAuth login route is gated by the same token (plus a `state` check) so nobody can overwrite your stored account. Tokens live in Cloudflare KV. Nothing sensitive is in the repo: `.env`, `.tokens.json` and `wrangler.jsonc` are all gitignored.
 
-## Good to know
+## Notes
 
-- **Quota**: the YouTube Data API gives 10,000 free units/day. Reads cost 1, edits ~50, `search_videos` costs 100. Organizing playlists all day fits comfortably.
-- **Thumbnails**: JPEG/PNG up to 2MB; your channel must be phone-verified for custom thumbnails.
-- **Titles/descriptions**: max 100 / 5000 chars; YouTube rejects `<` and `>`.
-- Everything is free — no Google billing account required, and the Worker fits in Cloudflare's free tier.
+- The YouTube Data API gives 10,000 free units/day. Reads cost 1, edits about 50, `search_videos` costs 100.
+- Thumbnails: JPEG/PNG up to 2MB, and the channel must be phone-verified for custom thumbnails.
+- Titles max 100 chars, descriptions max 5000. YouTube rejects `<` and `>` in both.
+- Everything runs free: no Google billing account required, and the Worker fits in Cloudflare's free tier.
 
-## Architecture
+## Project layout
 
 ```
 src/
-├── mcp.ts          # local MCP server (stdio, Bun) — 20 tools via @modelcontextprotocol/sdk
-├── worker.ts       # Cloudflare Worker — same 20 tools over MCP Streamable HTTP, tokens in KV
+├── mcp.ts          # local MCP server (stdio, Bun)
+├── worker.ts       # Cloudflare Worker, same tools over MCP Streamable HTTP
 ├── auth-server.ts  # local one-time OAuth flow (Elysia)
 ├── auth.ts         # local token store + refresh
 ├── youtube.ts      # YouTube Data API v3 + Analytics API v2 client
