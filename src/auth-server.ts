@@ -12,7 +12,8 @@ const oauth = new GoogleOAuth(
     clientId: requireEnv("GOOGLE_CLIENT_ID"),
     clientSecret: requireEnv("GOOGLE_CLIENT_SECRET"),
     redirectUri:
-      process.env.OAUTH_REDIRECT_URI ?? `http://localhost:${port}/auth/callback`,
+      process.env.OAUTH_REDIRECT_URI ??
+      `http://localhost:${port}/auth/callback`,
     loginHint: `Open http://localhost:${port}/auth/login`,
   }),
   new FileTokenStore(join(ROOT, ".tokens.json")),

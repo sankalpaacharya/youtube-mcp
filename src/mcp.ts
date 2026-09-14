@@ -70,7 +70,10 @@ server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
   } catch (err) {
     return {
       content: [
-        { type: "text", text: `Error: ${err instanceof Error ? err.message : err}` },
+        {
+          type: "text",
+          text: `Error: ${err instanceof Error ? err.message : err}`,
+        },
       ],
       isError: true,
     };

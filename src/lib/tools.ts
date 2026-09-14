@@ -80,7 +80,9 @@ async function loadImage(
 ): Promise<LocalFile> {
   if (imagePath) {
     if (!ctx.readLocalFile)
-      throw new Error("imagePath only works when running locally; use imageUrl.");
+      throw new Error(
+        "imagePath only works when running locally; use imageUrl.",
+      );
     return ctx.readLocalFile(imagePath);
   }
   if (!imageUrl) throw new Error("Provide imagePath or imageUrl.");
@@ -104,9 +106,11 @@ function summarizeVideo(v: any) {
   };
 }
 
-const readOnly = (
-  def: Omit<ToolDef, "readOnly" | "destructive">,
-): ToolDef => ({ ...def, readOnly: true, destructive: false });
+const readOnly = (def: Omit<ToolDef, "readOnly" | "destructive">): ToolDef => ({
+  ...def,
+  readOnly: true,
+  destructive: false,
+});
 
 const write = (def: Omit<ToolDef, "readOnly" | "destructive">): ToolDef => ({
   ...def,
@@ -247,7 +251,9 @@ export const TOOLS: ToolDef[] = [
     handler: async (ctx, { videoId, imageUrl, imagePath }) => {
       const image = await loadImage(ctx, imagePath, imageUrl);
       if (!/^image\/(jpeg|png)/.test(image.contentType))
-        throw new Error(`Thumbnail must be JPEG or PNG, got ${image.contentType}`);
+        throw new Error(
+          `Thumbnail must be JPEG or PNG, got ${image.contentType}`,
+        );
       if (image.bytes.byteLength > 2 * 1024 * 1024)
         throw new Error("Image exceeds YouTube's 2MB thumbnail limit.");
       const res = await ctx.yt.setThumbnail(
@@ -412,7 +418,11 @@ export const TOOLS: ToolDef[] = [
     description:
       "Add a video to a playlist, optionally at a specific position (0 = top).",
     inputSchema: obj(
-      { playlistId: str, videoId: str, position: { type: "integer", minimum: 0 } },
+      {
+        playlistId: str,
+        videoId: str,
+        position: { type: "integer", minimum: 0 },
+      },
       ["playlistId", "videoId"],
     ),
     handler: async (ctx, { playlistId, videoId, position }) => {
@@ -450,10 +460,9 @@ export const TOOLS: ToolDef[] = [
     name: "video_stats",
     description:
       "Public statistics (views, likes, comments) for up to 50 videos at once.",
-    inputSchema: obj(
-      { videoIds: { ...strArray, minItems: 1, maxItems: 50 } },
-      ["videoIds"],
-    ),
+    inputSchema: obj({ videoIds: { ...strArray, minItems: 1, maxItems: 50 } }, [
+      "videoIds",
+    ]),
     handler: async (ctx, { videoIds }) => {
       const res = await ctx.yt.data("GET", "videos", {
         query: { part: "snippet,statistics", id: videoIds.join(",") },

@@ -18,12 +18,12 @@ An MCP server with 20 tools for your YouTube channel: rename videos, edit descri
 
 ## Tools
 
-| | |
-|---|---|
-| Videos | `list_my_videos` `get_video` `search_videos` |
-| Editing | `update_title` `update_description` `update_tags` `update_thumbnail` `update_video` |
+|           |                                                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Videos    | `list_my_videos` `get_video` `search_videos`                                                                                          |
+| Editing   | `update_title` `update_description` `update_tags` `update_thumbnail` `update_video`                                                   |
 | Playlists | `create_playlist` `add_to_playlist` `remove_from_playlist` `list_playlists` `list_playlist_items` `update_playlist` `delete_playlist` |
-| Insights | `top_videos` `video_stats` `channel_analytics` `get_thumbnail` `my_channel` |
+| Insights  | `top_videos` `video_stats` `channel_analytics` `get_thumbnail` `my_channel`                                                           |
 
 ## Setup
 

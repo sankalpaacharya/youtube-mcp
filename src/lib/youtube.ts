@@ -21,7 +21,11 @@ export class YouTubeClient {
     path: string,
     opts: { query?: Query; body?: unknown } = {},
   ): Promise<any> {
-    return this.request(method, buildUrl(DATA_BASE, path, opts.query), opts.body);
+    return this.request(
+      method,
+      buildUrl(DATA_BASE, path, opts.query),
+      opts.body,
+    );
   }
 
   analytics(query: Query): Promise<any> {

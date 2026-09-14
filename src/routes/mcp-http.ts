@@ -54,7 +54,10 @@ async function handleMessage(ctx: ToolContext, msg: any): Promise<any | null> {
           name: t.name,
           description: t.description,
           inputSchema: t.inputSchema,
-          annotations: { readOnlyHint: t.readOnly, destructiveHint: t.destructive },
+          annotations: {
+            readOnlyHint: t.readOnly,
+            destructiveHint: t.destructive,
+          },
         })),
       });
     case "tools/call": {

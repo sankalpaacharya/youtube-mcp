@@ -18,7 +18,9 @@ export function loadLocalEnv(): void {
 export function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value)
-    throw new Error(`Missing ${name}. Set it in ${join(ROOT, ".env")} (see .env.example)`);
+    throw new Error(
+      `Missing ${name}. Set it in ${join(ROOT, ".env")} (see .env.example)`,
+    );
   return value;
 }
 
