@@ -72,18 +72,57 @@
   },
   "overrides": [
     {
-      "files": ["apps/mcp/**/*.ts"],
+      "files": ["apps/mcp/src/lib/tools.ts"],
       "rules": {
         "no-await-in-loop": "off",
-        "no-console": "off",
-        "no-underscore-dangle": "off",
         "oxc/no-map-spread": "off",
-        "typescript/no-base-to-string": "off",
-        "typescript/no-explicit-any": "off",
-        "typescript/no-redundant-type-constituents": "off",
-        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["apps/mcp/src/auth-server.ts", "apps/mcp/src/mcp.ts"],
+      "rules": { "no-console": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/mcp.ts", "apps/mcp/src/routes/mcp-http.ts"],
+      "rules": {
+        "no-underscore-dangle": ["error", { "allow": ["__content"] }],
         "typescript/restrict-template-expressions": "off"
       }
+    },
+    {
+      "files": ["apps/mcp/src/auth-server.ts"],
+      "rules": {
+        "typescript/no-base-to-string": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/mcp/src/lib/youtube.ts",
+        "apps/mcp/src/lib/oauth.ts",
+        "apps/mcp/src/lib/types.ts",
+        "apps/mcp/src/utils/format.ts",
+        "apps/mcp/src/routes/mcp-http.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/mcp/src/lib/youtube.ts",
+        "apps/mcp/src/stores/file.ts",
+        "apps/mcp/src/stores/kv.ts"
+      ],
+      "rules": { "typescript/no-unsafe-type-assertion": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/lib/oauth.ts"],
+      "rules": { "typescript/restrict-template-expressions": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/routes/mcp-http.ts"],
+      "rules": { "typescript/no-redundant-type-constituents": "off" }
     },
     {
       "files": ["apps/web/app/layout.tsx"],

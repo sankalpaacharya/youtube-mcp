@@ -10,7 +10,7 @@
     "deploy": "wrangler deploy --config wrangler.jsonc",
     "deploy:local": "wrangler deploy --config wrangler.local.jsonc",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src"
+    "lint": "pnpm --dir ../.. exec oxlint apps/mcp --type-aware --deny-warnings"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

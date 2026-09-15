@@ -65,9 +65,7 @@ export default function Home() {
                 <p>{stage.detail}</p>
               </div>
               <span className="stage-state">
-                {stage.state === "ready" || stage.state === "connected"
-                  ? "Ready"
-                  : "Coming next"}
+                {stage.state === "connected" ? "MCP available" : "Planned"}
               </span>
             </li>
           ))}

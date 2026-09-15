@@ -16,6 +16,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the ownership rules behind the layout
 
 ## Start the frontend
 
+Use Node.js 22 or newer and pnpm 11.25.0. Bun is also required to run the local
+MCP service.
+
 ```sh
 pnpm install
 pnpm dev
@@ -29,13 +32,18 @@ Useful workspace commands:
 pnpm build
 pnpm typecheck
 pnpm lint
+pnpm lint:fix
 pnpm format:check
+pnpm check
 ```
 
 ## YouTube MCP server
 
 The MCP app still provides the YouTube tools for videos, playlists, thumbnails,
 and analytics.
+
+See [the MCP setup guide](apps/mcp/README.md) for Google credentials, login,
+client registration, Worker deployment, and migration from the old layout.
 
 ```sh
 cp apps/mcp/.env.example apps/mcp/.env
@@ -50,9 +58,9 @@ pnpm --dir /absolute/path/to/youtube-mcp --filter @youtube-media/mcp mcp
 ```
 
 Cloudflare configuration lives beside the service in `apps/mcp/wrangler.jsonc`.
-If you already had a personalized root configuration, it has been preserved as
-the ignored `apps/mcp/wrangler.local.jsonc`; deploy it with `pnpm --filter
-@youtube-media/mcp deploy:local`.
+Personal deployment settings belong in the ignored
+`apps/mcp/wrangler.local.jsonc`; deploy them with
+`pnpm --filter @youtube-media/mcp deploy:local`.
 
 ## License
 
