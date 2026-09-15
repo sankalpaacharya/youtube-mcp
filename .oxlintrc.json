@@ -1,0 +1,155 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "react-perf",
+    "nextjs",
+    "jsx-a11y",
+    "import",
+    "promise",
+    "node"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "rules": {
+    "eqeqeq": ["error", "always"],
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-mutable-exports": "error",
+    "import/no-self-import": "error",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@youtube-media/web",
+              "@youtube-media/web/**",
+              "@youtube-media/mcp",
+              "@youtube-media/mcp/**"
+            ],
+            "message": "Apps are deployment entry points. Extract shared code into a package and import its public exports."
+          }
+        ]
+      }
+    ],
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/html-has-lang": "error",
+    "jsx-a11y/no-aria-hidden-on-focusable": "error",
+    "jsx-a11y/no-autofocus": "error",
+    "jsx-a11y/tabindex-no-positive": "error",
+    "nextjs/no-async-client-component": "error",
+    "nextjs/no-head-element": "error",
+    "nextjs/no-img-element": "error",
+    "no-alert": "error",
+    "no-console": "error",
+    "no-debugger": "error",
+    "prefer-const": "error",
+    "promise/no-multiple-resolved": "error",
+    "promise/no-return-in-finally": "error",
+    "promise/no-return-wrap": "error",
+    "react/jsx-key": "error",
+    "react/jsx-no-useless-fragment": "error",
+    "react/no-danger": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/self-closing-comp": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      { "prefer": "type-imports" }
+    ],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "unicorn/prefer-node-protocol": "error"
+  },
+  "settings": {
+    "next": {
+      "rootDir": "apps/web/"
+    },
+    "react": {
+      "version": "19.2.8"
+    }
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  },
+  "overrides": [
+    {
+      "files": ["apps/mcp/src/lib/tools.ts"],
+      "rules": {
+        "no-await-in-loop": "off",
+        "oxc/no-map-spread": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["apps/mcp/src/auth-server.ts", "apps/mcp/src/mcp.ts"],
+      "rules": { "no-console": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/mcp.ts", "apps/mcp/src/routes/mcp-http.ts"],
+      "rules": {
+        "no-underscore-dangle": ["error", { "allow": ["__content"] }],
+        "typescript/restrict-template-expressions": "off"
+      }
+    },
+    {
+      "files": ["apps/mcp/src/auth-server.ts"],
+      "rules": {
+        "typescript/no-base-to-string": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/mcp/src/lib/youtube.ts",
+        "apps/mcp/src/lib/oauth.ts",
+        "apps/mcp/src/lib/types.ts",
+        "apps/mcp/src/utils/format.ts",
+        "apps/mcp/src/routes/mcp-http.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/mcp/src/lib/youtube.ts",
+        "apps/mcp/src/stores/file.ts",
+        "apps/mcp/src/stores/kv.ts"
+      ],
+      "rules": { "typescript/no-unsafe-type-assertion": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/lib/oauth.ts"],
+      "rules": { "typescript/restrict-template-expressions": "off" }
+    },
+    {
+      "files": ["apps/mcp/src/routes/mcp-http.ts"],
+      "rules": { "typescript/no-redundant-type-constituents": "off" }
+    }
+  ],
+  "ignorePatterns": [
+    ".git/**",
+    ".impeccable/**",
+    ".turbo/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/node_modules/**"
+  ]
+}

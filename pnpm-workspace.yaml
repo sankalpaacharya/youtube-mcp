@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Keep installs deterministic; these packages ship prebuilt binaries here.
+allowBuilds:
+  esbuild: false
+  workerd: false
