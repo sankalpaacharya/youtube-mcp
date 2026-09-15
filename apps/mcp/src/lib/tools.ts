@@ -522,7 +522,7 @@ export const TOOLS: ToolDef[] = [
         return views;
       };
       const top = videos
-        .sort((a, b) => score(b) - score(a))
+        .toSorted((a, b) => score(b) - score(a))
         .slice(0, limit)
         .map((v, i) => ({
           rank: i + 1,

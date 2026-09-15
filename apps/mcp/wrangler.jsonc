@@ -1,0 +1,16 @@
+{
+  "name": "youtube-mcp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  // Provisioned automatically by the Deploy to Cloudflare button.
+  // For manual deploys: `pnpm exec wrangler kv namespace create TOKENS`.
+  "kv_namespaces": [
+    { "binding": "TOKENS", "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" },
+  ],
+  "vars": {
+    "GOOGLE_CLIENT_ID": "your-client-id.apps.googleusercontent.com",
+  },
+  // Secrets:
+  //   GOOGLE_CLIENT_SECRET - from the Google OAuth client
+  //   MCP_PATH_TOKEN       - random URL secret
+}
