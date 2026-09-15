@@ -24,6 +24,23 @@
     "import/no-duplicates": "error",
     "import/no-mutable-exports": "error",
     "import/no-self-import": "error",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@youtube-media/web",
+              "@youtube-media/web/**",
+              "@youtube-media/mcp",
+              "@youtube-media/mcp/**"
+            ],
+            "message": "Apps are deployment entry points. Extract shared code into a package and import its public exports."
+          }
+        ]
+      }
+    ],
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-is-valid": "error",
     "jsx-a11y/click-events-have-key-events": "error",
@@ -123,12 +140,6 @@
     {
       "files": ["apps/mcp/src/routes/mcp-http.ts"],
       "rules": { "typescript/no-redundant-type-constituents": "off" }
-    },
-    {
-      "files": ["apps/web/app/layout.tsx"],
-      "rules": {
-        "import/no-unassigned-import": "off"
-      }
     }
   ],
   "ignorePatterns": [

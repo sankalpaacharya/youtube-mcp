@@ -13,6 +13,7 @@ packages/   Future shared UI, media, and configuration packages
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the ownership rules behind the layout.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for naming, imports, and Git conventions.
 
 ## Start the frontend
 
