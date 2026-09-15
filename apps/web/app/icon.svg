@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <title>YouTube</title>
-  <rect x="1" y="6" width="30" height="20" rx="6" fill="#ff0000" />
-  <path d="M13 11v10l9-5z" fill="#fff" />
+  <title>Media Pipeline</title>
+  <path fill="#151718" d="M0 0h32v32H0z" />
+  <path fill="#f1f3f2" d="M5 5h22v9H5z" />
+  <path fill="#ff4d3d" d="M5 18h14v9H5z" />
 </svg>
